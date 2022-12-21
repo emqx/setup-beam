@@ -26,14 +26,14 @@ async function main() {
   }
 
   const osVersion = getRunnerOSVersion()
-  const otpSpec = getInput('otp-version', true, 'erlang', versions)
+  const otpVersion = getInput('otp-version', true, 'erlang', versions)
   const elixirSpec = getInput('elixir-version', false, 'elixir', versions)
   const gleamSpec = getInput('gleam-version', false, 'gleam', versions)
   const rebar3Spec = getInput('rebar3-version', false, 'rebar', versions)
 
-  if (otpSpec !== 'false') {
-    await installOTP(otpSpec, osVersion)
-    const elixirInstalled = await maybeInstallElixir(elixirSpec, otpSpec)
+  if (otpVersion !== 'false') {
+    await installOTP(otpVersion, osVersion)
+    const elixirInstalled = await maybeInstallElixir(elixirSpec, otpVersion)
 
     if (elixirInstalled === true) {
       const shouldMixRebar = getInput('install-rebar', false)
@@ -49,8 +49,7 @@ async function main() {
   await maybeInstallRebar3(rebar3Spec)
 }
 
-async function installOTP(otpSpec, osVersion) {
-  const otpVersion = await getOTPVersion(otpSpec, osVersion)
+async function installOTP(otpVersion, osVersion) {
   console.log(
     `##[group]Installing Erlang/OTP ${otpVersion} - built on ${osVersion}`,
   )
@@ -136,26 +135,6 @@ async function maybeInstallRebar3(rebar3Spec) {
   return installed
 }
 
-async function getOTPVersion(otpSpec0, osVersion) {
-  const otpVersions = await getOTPVersions(osVersion)
-  let otpSpec = otpSpec0 // might be a branch (?)
-  const otpVersion = getVersionFromSpec(
-    otpSpec,
-    Array.from(otpVersions.keys()).sort(),
-  )
-  if (isVersion(otpSpec0)) {
-    otpSpec = `OTP-${otpSpec0}` // ... it's a version!
-  }
-  if (otpVersion === null) {
-    throw new Error(
-      `Requested Erlang/OTP version (${otpSpec0}) not found in version list ` +
-        "(should you be using option 'version-type': 'strict'?)",
-    )
-  }
-
-  return otpVersions.get(otpVersion) // from the reference, for download
-}
-
 async function getElixirVersion(exSpec0, otpVersion0) {
   const otpVersion = otpVersion0.match(/^([^-]+-)?(.+)$/)[2]
   const otpVersionMajor = otpVersion.match(/^([^.]+).*$/)[1]
@@ -217,48 +196,6 @@ async function getRebar3Version(r3Spec) {
   }
 
   return rebar3Version
-}
-
-async function getOTPVersions(osVersion) {
-  let originListing
-  let pageIdxs
-  if (process.platform === 'linux') {
-    originListing = `https://repo.hex.pm/builds/otp/${osVersion}/builds.txt`
-    pageIdxs = [null]
-  } else if (process.platform === 'win32') {
-    originListing =
-      'https://api.github.com/repos/erlang/otp/releases?per_page=100'
-    pageIdxs = [1, 2, 3]
-  }
-
-  const otpVersionsListings = await get(originListing, pageIdxs)
-  const otpVersions = new Map()
-
-  if (process.platform === 'linux') {
-    otpVersionsListings
-      .trim()
-      .split('\n')
-      .forEach((line) => {
-        const otpMatch = line
-          .match(/^([^ ]+)?( .+)/)[1]
-          .match(/^([^-]+-)?(.+)$/)
-        const otpVersion = otpMatch[2]
-        otpVersions.set(otpVersion, otpMatch[0]) // we keep the original for later reference
-      })
-  } else if (process.platform === 'win32') {
-    otpVersionsListings.forEach((otpVersionsListing) => {
-      JSON.parse(otpVersionsListing)
-        .map((x) => x.assets)
-        .flat()
-        .filter((x) => x.name.match(/^otp_win64_.*.exe$/))
-        .forEach((x) => {
-          const otpMatch = x.name.match(/^otp_win64_(.*).exe$/)
-          const otpVersion = otpMatch[1]
-          otpVersions.set(otpVersion, otpVersion)
-        })
-    })
-  }
-  return otpVersions
 }
 
 async function getElixirVersions() {
@@ -524,7 +461,6 @@ function parseVersionFile(versionFilePath0) {
 }
 
 module.exports = {
-  getOTPVersion,
   getElixirVersion,
   getGleamVersion,
   getRebar3Version,

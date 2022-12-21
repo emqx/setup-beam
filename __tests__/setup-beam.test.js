@@ -15,7 +15,6 @@ async function all() {
   await testFailInstallGleam()
   await testFailInstallRebar3()
 
-  await testOTPVersions()
   await testElixirVersions()
   await testGleamVersions()
   await testRebar3Versions()
@@ -94,77 +93,6 @@ async function testFailInstallRebar3() {
     },
     `Installing rebar3 ${r3Version} is supposed to fail`,
   )
-}
-
-async function testOTPVersions() {
-  let got
-  let expected
-  let spec
-  let osVersion
-
-  if (process.platform === 'linux') {
-    spec = '19.3.x'
-    osVersion = 'ubuntu-16.04'
-    expected = 'OTP-19.3.6.13'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '^19.3.6'
-    osVersion = 'ubuntu-16.04'
-    expected = 'OTP-19.3.6.13'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '^19.3'
-    osVersion = 'ubuntu-18.04'
-    expected = 'OTP-19.3.6.13'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '20'
-    osVersion = 'ubuntu-20.04'
-    expected = 'OTP-20.3.8.26'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '20.x'
-    osVersion = 'ubuntu-20.04'
-    expected = 'OTP-20.3.8.26'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '20.0'
-    osVersion = 'ubuntu-20.04'
-    expected = 'OTP-20.0.5'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '20.0.x'
-    osVersion = 'ubuntu-20.04'
-    expected = 'OTP-20.0.5'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-  }
-
-  if (process.platform === 'win32') {
-    spec = '24.0.1'
-    osVersion = 'windows-latest'
-    expected = '24.0.1'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '23.2.x'
-    osVersion = 'windows-2016'
-    expected = '23.2.7'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-
-    spec = '23.0'
-    osVersion = 'windows-2019'
-    expected = '23.0.4'
-    got = await setupBeam.getOTPVersion(spec, osVersion)
-    assert.deepStrictEqual(got, expected)
-  }
 }
 
 async function testElixirVersions() {

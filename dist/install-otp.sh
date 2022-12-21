@@ -6,7 +6,7 @@ cd "${RUNNER_TEMP}"
 
 OS=${1}
 VSN=${2}
-FILE_INPUT="${VSN}.tar.gz"
+FILE_INPUT="OTP-${VSN}.tar.gz"
 FILE_OUTPUT=otp.tar.gz
 DIR_FOR_BIN=.setup-beam/otp
 

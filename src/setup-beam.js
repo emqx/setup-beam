@@ -3,7 +3,7 @@ const { exec } = require('@actions/exec')
 const os = require('os')
 const path = require('path')
 const semver = require('semver')
-const https = require('https')
+const request = require('requestretry')
 const fs = require('fs')
 const installer = require('./installer')
 
@@ -412,6 +412,18 @@ function getRunnerOSVersion() {
   return containerFromEnvImageOS
 }
 
+function getExponentialBackoff(attempts) {
+  return Math.pow(2, attempts) * 100 + Math.floor(Math.random() * 50)
+}
+
+function constructExponentialBackoffStrategy() {
+  let attempts = 0
+  return () => {
+    attempts += 1
+    return getExponentialBackoff(attempts)
+  }
+}
+
 async function get(url0, pageIdxs) {
   function getPage(pageIdx) {
     return new Promise((resolve, reject) => {
@@ -419,32 +431,17 @@ async function get(url0, pageIdxs) {
       if (pageIdx !== null) {
         url.searchParams.append('page', pageIdx)
       }
-      https
-        .get(
-          url,
-          {
-            headers: { 'user-agent': 'setup-beam' },
-          },
-          (res) => {
-            let data = ''
-            res.on('data', (chunk) => {
-              data += chunk
-            })
-            res.on('end', () => {
-              if (res.statusCode >= 400 && res.statusCode <= 599) {
-                reject(
-                  new Error(
-                    `Got ${res.statusCode} from ${url}. Exiting with error`,
-                  ),
-                )
-              } else {
-                resolve(data)
-              }
-            })
-          },
-        )
-        .on('error', (err) => {
-          reject(err)
+      request({
+        url: url.toString(),
+        headers: {
+          'user-agent': 'setup-beam',
+        },
+        fullResponse: false,
+        delayStrategy: constructExponentialBackoffStrategy(),
+      })
+        .then(resolve)
+        .catch((err) => {
+          reject(new Error(`Failed too many times (${err})`))
         })
     })
   }
